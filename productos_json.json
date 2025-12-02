@@ -1,0 +1,286 @@
+{
+  "metadata": {
+    "fecha_actualizacion": "2024-12-02",
+    "total_productos": 24,
+    "moneda": "USD",
+    "version": "1.0.0"
+  },
+  "categorias": [
+    {
+      "id": "cat_001",
+      "nombre": "Electrónica",
+      "productos": [
+        {
+          "id": "prod_001",
+          "nombre": "Laptop HP Pavilion",
+          "descripcion": "Laptop potente para trabajo y entretenimiento",
+          "precio": 899.99,
+          "stock": 45,
+          "ventas_mes": 87,
+          "sku": "LAP-HP-001",
+          "imagen": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400"
+        },
+        {
+          "id": "prod_002",
+          "nombre": "Mouse Logitech MX",
+          "descripcion": "Mouse ergonómico de alta precisión",
+          "precio": 79.99,
+          "stock": 120,
+          "ventas_mes": 156,
+          "sku": "MOU-LOG-002",
+          "imagen": "https://images.unsplash.com/photo-1527814050087-3793815479db?w=400"
+        },
+        {
+          "id": "prod_003",
+          "nombre": "Teclado Mecánico RGB",
+          "descripcion": "Teclado gaming con iluminación RGB",
+          "precio": 129.99,
+          "stock": 8,
+          "ventas_mes": 12,
+          "sku": "TEC-MEC-003",
+          "imagen": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400"
+        },
+        {
+          "id": "prod_004",
+          "nombre": "Webcam HD 1080p",
+          "descripcion": "Cámara web de alta definición",
+          "precio": 59.99,
+          "stock": 67,
+          "ventas_mes": 34,
+          "sku": "WEB-HD-004",
+          "imagen": "https://images.unsplash.com/photo-1563203369-26f2e4a5ccf7?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_002",
+      "nombre": "Hogar y Cocina",
+      "productos": [
+        {
+          "id": "prod_005",
+          "nombre": "Licuadora Oster",
+          "descripcion": "Licuadora de 600W multifuncional",
+          "precio": 49.99,
+          "stock": 92,
+          "ventas_mes": 145,
+          "sku": "LIC-OST-005",
+          "imagen": "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400"
+        },
+        {
+          "id": "prod_006",
+          "nombre": "Cafetera Espresso",
+          "descripcion": "Cafetera automática de espresso",
+          "precio": 189.99,
+          "stock": 23,
+          "ventas_mes": 78,
+          "sku": "CAF-ESP-006",
+          "imagen": "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400"
+        },
+        {
+          "id": "prod_007",
+          "nombre": "Juego de Cuchillos",
+          "descripcion": "Set de 6 cuchillos profesionales",
+          "precio": 79.99,
+          "stock": 5,
+          "ventas_mes": 8,
+          "sku": "CUC-SET-007",
+          "imagen": "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=400"
+        },
+        {
+          "id": "prod_008",
+          "nombre": "Sartén Antiadherente",
+          "descripcion": "Sartén de 28cm antiadherente",
+          "precio": 39.99,
+          "stock": 110,
+          "ventas_mes": 203,
+          "sku": "SAR-ANT-008",
+          "imagen": "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_003",
+      "nombre": "Deportes",
+      "productos": [
+        {
+          "id": "prod_009",
+          "nombre": "Mancuernas 10kg",
+          "descripcion": "Par de mancuernas ajustables",
+          "precio": 45.99,
+          "stock": 78,
+          "ventas_mes": 112,
+          "sku": "MAN-10K-009",
+          "imagen": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400"
+        },
+        {
+          "id": "prod_010",
+          "nombre": "Colchoneta Yoga",
+          "descripcion": "Colchoneta antideslizante premium",
+          "precio": 29.99,
+          "stock": 134,
+          "ventas_mes": 189,
+          "sku": "COL-YOG-010",
+          "imagen": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400"
+        },
+        {
+          "id": "prod_011",
+          "nombre": "Banda Elástica",
+          "descripcion": "Banda de resistencia para ejercicios",
+          "precio": 15.99,
+          "stock": 3,
+          "ventas_mes": 6,
+          "sku": "BAN-ELA-011",
+          "imagen": "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400"
+        },
+        {
+          "id": "prod_012",
+          "nombre": "Botella Deportiva",
+          "descripcion": "Botella térmica de 750ml",
+          "precio": 19.99,
+          "stock": 210,
+          "ventas_mes": 267,
+          "sku": "BOT-DEP-012",
+          "imagen": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_004",
+      "nombre": "Moda",
+      "productos": [
+        {
+          "id": "prod_013",
+          "nombre": "Zapatillas Running",
+          "descripcion": "Zapatillas deportivas para correr",
+          "precio": 89.99,
+          "stock": 56,
+          "ventas_mes": 98,
+          "sku": "ZAP-RUN-013",
+          "imagen": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400"
+        },
+        {
+          "id": "prod_014",
+          "nombre": "Gorra Deportiva",
+          "descripcion": "Gorra ajustable con protección UV",
+          "precio": 24.99,
+          "stock": 145,
+          "ventas_mes": 176,
+          "sku": "GOR-DEP-014",
+          "imagen": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400"
+        },
+        {
+          "id": "prod_015",
+          "nombre": "Reloj Inteligente",
+          "descripcion": "Smartwatch con monitor cardíaco",
+          "precio": 199.99,
+          "stock": 7,
+          "ventas_mes": 15,
+          "sku": "REL-INT-015",
+          "imagen": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"
+        },
+        {
+          "id": "prod_016",
+          "nombre": "Mochila Urbana",
+          "descripcion": "Mochila resistente al agua 25L",
+          "precio": 59.99,
+          "stock": 89,
+          "ventas_mes": 134,
+          "sku": "MOC-URB-016",
+          "imagen": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_005",
+      "nombre": "Libros y Papelería",
+      "productos": [
+        {
+          "id": "prod_017",
+          "nombre": "Cuaderno A4",
+          "descripcion": "Cuaderno universitario 200 hojas",
+          "precio": 12.99,
+          "stock": 234,
+          "ventas_mes": 312,
+          "sku": "CUA-A4-017",
+          "imagen": "https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400"
+        },
+        {
+          "id": "prod_018",
+          "nombre": "Set Bolígrafos",
+          "descripcion": "Pack de 12 bolígrafos de colores",
+          "precio": 8.99,
+          "stock": 178,
+          "ventas_mes": 245,
+          "sku": "BOL-SET-018",
+          "imagen": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=400"
+        },
+        {
+          "id": "prod_019",
+          "nombre": "Libro Marketing Digital",
+          "descripcion": "Guía completa de marketing online",
+          "precio": 34.99,
+          "stock": 4,
+          "ventas_mes": 9,
+          "sku": "LIB-MAR-019",
+          "imagen": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
+        },
+        {
+          "id": "prod_020",
+          "nombre": "Agenda 2025",
+          "descripcion": "Agenda anual con planificador",
+          "precio": 18.99,
+          "stock": 156,
+          "ventas_mes": 198,
+          "sku": "AGE-2025-020",
+          "imagen": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_006",
+      "nombre": "Tecnología",
+      "productos": [
+        {
+          "id": "prod_021",
+          "nombre": "Auriculares Bluetooth",
+          "descripcion": "Auriculares inalámbricos con cancelación de ruido",
+          "precio": 149.99,
+          "stock": 67,
+          "ventas_mes": 123,
+          "sku": "AUR-BLU-021",
+          "imagen": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400"
+        },
+        {
+          "id": "prod_022",
+          "nombre": "Cargador Rápido",
+          "descripcion": "Cargador USB-C de 65W",
+          "precio": 29.99,
+          "stock": 198,
+          "ventas_mes": 287,
+          "sku": "CAR-RAP-022",
+          "imagen": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400"
+        },
+        {
+          "id": "prod_023",
+          "nombre": "Cable USB-C Premium",
+          "descripcion": "Cable trenzado de 2 metros",
+          "precio": 19.99,
+          "stock": 6,
+          "ventas_mes": 11,
+          "sku": "CAB-USB-023",
+          "imagen": "https://images.unsplash.com/photo-1591290619762-d71b7f6ea8c2?w=400"
+        },
+        {
+          "id": "prod_024",
+          "nombre": "Power Bank 20000mAh",
+          "descripcion": "Batería portátil de carga rápida",
+          "precio": 39.99,
+          "stock": 112,
+          "ventas_mes": 167,
+          "sku": "POW-BAN-024",
+          "imagen": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400"
+        }
+      ]
+    }
+  ]
+}

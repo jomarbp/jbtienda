@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Inventario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(168, 85, 247, 0.4);
+        }
+        
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen">
+    
+    <div class="max-w-7xl mx-auto p-6">
+        <!-- Header -->
+        <div class="mb-8 animate-fade-in">
+            <h1 class="text-4xl font-bold text-white mb-2">📊 Dashboard de Inventario</h1>
+            <p class="text-purple-200" id="fecha-actualizacion">Cargando datos...</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8" id="stats-container"></div>
+
+        <!-- Productos Menos Vendidos -->
+        <div class="glassmorphism rounded-xl p-6 mb-8 animate-fade-in">
+            <div class="flex items-center gap-3 mb-6">
+                <svg class="text-red-400" width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                </svg>
+                <h2 class="text-2xl font-bold text-white">Productos Menos Vendidos</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="menos-vendidos-container"></div>
+        </div>
+
+        <!-- Filtro de Categorías -->
+        <div class="glassmorphism rounded-xl p-4 mb-6 animate-fade-in">
+            <div class="flex flex-wrap gap-2" id="categorias-container"></div>
+        </div>
+
+        <!-- Grid de Productos -->
+        <div class="glassmorphism rounded-xl p-6 animate-fade-in">
+            <h2 class="text-2xl font-bold text-white mb-6" id="titulo-productos">Catálogo de Productos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="productos-container"></div>
+        </div>
+
+        <!-- JSON Export Section -->
+        <div class="mt-8 glassmorphism rounded-xl p-6 animate-fade-in">
+            <h3 class="text-xl font-bold text-white mb-4">🔗 Endpoint JSON para n8n</h3>
+            <p class="text-purple-200 mb-4">
+                Usa la URL de tu GitHub Pages para consumir este JSON desde n8n:
+                <code class="bg-purple-500/30 px-2 py-1 rounded block mt-2">
+                    https://tu-usuario.github.io/tu-repo/productos.json
+                </code>
+            </p>
+            <div class="flex gap-3 flex-wrap">
+                <button onclick="descargarJSON()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg transition-colors font-semibold">
+                    📥 Descargar JSON
+                </button>
+                <button onclick="copiarJSON()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors font-semibold">
+                    📋 Copiar JSON
+                </button>
+                <button onclick="verJSON()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors font-semibold">
+                    👁️ Ver JSON
+                </button>
+            </div>
+            <div id="json-viewer" class="hidden mt-4 bg-black bg-opacity-40 rounded-lg p-4 overflow-x-auto max-h-96">
+                <pre class="text-green-400 text-sm" id="json-display"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JSON integrado directamente
+        const productosData = {
+            "metadata": {
+                "fecha_actualizacion": "2024-12-02",
+                "total_productos": 24,
+                "moneda": "USD",
+                "version": "1.0.0"
+            },
+            "categorias": [
+                {
+                    "id": "cat_001",
+                    "nombre": "Electrónica",
+                    "productos": [
+                        {
+                            "id": "prod_001",
+                            "nombre": "Laptop HP Pavilion",
+                            "descripcion": "Laptop potente para trabajo y entretenimiento",
+                            "precio": 899.99,
+                            "stock": 45,
+                            "ventas_mes": 87,
+                            "sku": "LAP-HP-001",
+                            "imagen": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400"
+                        },
+                        {
+                            "id": "prod_002",
+                            "nombre": "Mouse Logitech MX",
+                            "descripcion": "Mouse ergonómico de alta precisión",
+                            "precio": 79.99,
+                            "stock": 120,
+                            "ventas_mes": 156,
+                            "sku": "MOU-LOG-002",
+                            "imagen": "https://images.unsplash.com/photo-1527814050087-3793815479db?w=400"
+                        },
+                        {
+                            "id": "prod_003",
+                            "nombre": "Teclado Mecánico RGB",
+                            "descripcion": "Teclado gaming con iluminación RGB",
+                            "precio": 129.99,
+                            "stock": 8,
+                            "ventas_mes": 12,
+                            "sku": "TEC-MEC-003",
+                            "imagen": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400"
+                        },
+                        {
+                            "id": "prod_004",
+                            "nombre": "Webcam HD 1080p",
+                            "descripcion": "Cámara web de alta definición",
+                            "precio": 59.99,
+                            "stock": 67,
+                            "ventas_mes": 34,
+                            "sku": "WEB-HD-004",
+                            "imagen": "https://images.unsplash.com/photo-1563203369-26f2e4a5ccf7?w=400"
+                        }
+                    ]
+                },
+                {
+                    "id": "cat_002",
+                    "nombre": "Hogar y Cocina",
+                    "productos": [
+                        {
+                            "id": "prod_005",
+                            "nombre": "Licuadora Oster",
+                            "descripcion": "Licuadora de 600W multifuncional",
+                            "precio": 49.99,
+                            "stock": 92,
+                            "ventas_mes": 145,
+                            "sku": "LIC-OST-005",
+                            "imagen": "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400"
+                        },
+                        {
+                            "id": "prod_006",
+                            "nombre": "Cafetera Espresso",
+                            "descripcion": "Cafetera automática de espresso",
+                            "precio": 189.99,
+                            "stock": 23,
+                            "ventas_mes": 78,
+                            "sku": "CAF-ESP-006",
+                            "imagen": "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400"
+                        },
+                        {
+                            "id": "prod_007",
+                            "nombre": "Juego de Cuchillos",
+                            "descripcion": "Set de 6 cuchillos profesionales",
+                            "precio": 79.99,
+                            "stock": 5,
+                            "ventas_mes": 8,
+                            "sku": "CUC-SET-007",
+                            "imagen": "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=400"
+                        },
+                        {
+                            "id": "prod_008",
+                            "nombre": "Sartén Antiadherente",
+                            "descripcion": "Sartén de 28cm antiadherente",
+                            "precio": 39.99,
+                            "stock": 110,
+                            "ventas_mes": 203,
+                            "sku": "SAR-ANT-008",
+                            "imagen": "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400"
+                        }
+                    ]
+                },
+                {
+                    "id": "cat_003",
+                    "nombre": "Deportes",
+                    "productos": [
+                        {
+                            "id": "prod_009",
+                            "nombre": "Mancuernas 10kg",
+                            "descripcion": "Par de mancuernas ajustables",
+                            "precio": 45.99,
+                            "stock": 78,
+                            "ventas_mes": 112,
+                            "sku": "MAN-10K-009",
+                            "imagen": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400"
+                        },
+                        {
+                            "id": "prod_010",
+                            "nombre": "Colchoneta Yoga",
+                            "descripcion": "Colchoneta antideslizante premium",
+                            "precio": 29.99,
+                            "stock": 134,
+                            "ventas_mes": 189,
+                            "sku": "COL-YOG-010",
+                            "imagen": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400"
+                        },
+                        {
+                            "id": "prod_011",
+                            "nombre": "Banda Elástica",
+                            "descripcion": "Banda de resistencia para ejercicios",
+                            "precio": 15.99,
+                            "stock": 3,
+                            "ventas_mes": 6,
+                            "sku": "BAN-ELA-011",
+                            "imagen": "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400"
+                        },
+                        {
+                            "id": "prod_012",
+                            "nombre": "Botella Deportiva",
+                            "descripcion": "Botella térmica de 750ml",
+                            "precio": 19.99,
+                            "stock": 210,
+                            "ventas_mes": 267,
+                            "sku": "BOT-DEP-012",
+                            "imagen": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400"
+                        }
+                    ]
+                },
+                {
+                    "id": "cat_004",
+                    "nombre": "Moda",
+                    "productos": [
+                        {
+                            "id": "prod_013",
+                            "nombre": "Zapatillas Running",
+                            "descripcion": "Zapatillas deportivas para correr",
+                            "precio": 89.99,
+                            "stock": 56,
+                            "ventas_mes": 98,
+                            "sku": "ZAP-RUN-013",
+                            "imagen": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400"
+                        },
+                        {
+                            "id": "prod_014",
+                            "nombre": "Gorra Deportiva",
+                            "descripcion": "Gorra ajustable con protección UV",
+                            "precio": 24.99,
+                            "stock": 145,
+                            "ventas_mes": 176,
+                            "sku": "GOR-DEP-014",
+                            "imagen": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400"
+                        },
+                        {
+                            "id": "prod_015",
+                            "nombre": "Reloj Inteligente",
+                            "descripcion": "Smartwatch con monitor cardíaco",
+                            "precio": 199.99,
+                            "stock": 7,
+                            "ventas_mes": 15,
+                            "sku": "REL-INT-015",
+                            "imagen": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"
+                        },
+                        {
+                            "id": "prod_016",
+                            "nombre": "Mochila Urbana",
+                            "descripcion": "Mochila resistente al agua 25L",
+                            "precio": 59.99,
+                            "stock": 89,
+                            "ventas_mes": 134,
+                            "sku": "MOC-URB-016",
+                            "imagen": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400"
+                        }
+                    ]
+                },
+                {
+                    "id": "cat_005",
+                    "nombre": "Libros y Papelería",
+                    "productos": [
+                        {
+                            "id": "prod_017",
+                            "nombre": "Cuaderno A4",
+                            "descripcion": "Cuaderno universitario 200 hojas",
+                            "precio": 12.99,
+                            "stock": 234,
+                            "ventas_mes": 312,
+                            "sku": "CUA-A4-017",
+                            "imagen": "https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400"
+                        },
+                        {
+                            "id": "prod_018",
+                            "nombre": "Set Bolígrafos",
+                            "descripcion": "Pack de 12 bolígrafos de colores",
+                            "precio": 8.99,
+                            "stock": 178,
+                            "ventas_mes": 245,
+                            "sku": "BOL-SET-018",
+                            "imagen": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=400"
+                        },
+                        {
+                            "id": "prod_019",
+                            "nombre": "Libro Marketing Digital",
+                            "descripcion": "Guía completa de marketing online",
+                            "precio": 34.99,
+                            "stock": 4,
+                            "ventas_mes": 9,
+                            "sku": "LIB-MAR-019",
+                            "imagen": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
+                        },
+                        {
+                            "id": "prod_020",
+                            "nombre": "Agenda 2025",
+                            "descripcion": "Agenda anual con planificador",
+                            "precio": 18.99,
+                            "stock": 156,
+                            "ventas_mes": 198,
+                            "sku": "AGE-2025-020",
+                            "imagen": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400"
+                        }
+                    ]
+                },
+                {
+                    "id": "cat_006",
+                    "nombre": "Tecnología",
+                    "productos": [
+                        {
+                            "id": "prod_021",
+                            "nombre": "Auriculares Bluetooth",
+                            "descripcion": "Auriculares inalámbricos con cancelación de ruido",
+                            "precio": 149.99,
+                            "stock": 67,
+                            "ventas_mes": 123,
+                            "sku": "AUR-BLU-021",
+                            "imagen": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400"
+                        },
+                        {
+                            "id": "prod_022",
+                            "nombre": "Cargador Rápido",
+                            "descripcion": "Cargador USB-C de 65W",
+                            "precio": 29.99,
+                            "stock": 198,
+                            "ventas_mes": 287,
+                            "sku": "CAR-RAP-022",
+                            "imagen": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400"
+                        },
+                        {
+                            "id": "prod_023",
+                            "nombre": "Cable USB-C Premium",
+                            "descripcion": "Cable trenzado de 2 metros",
+                            "precio": 19.99,
+                            "stock": 6,
+                            "ventas_mes": 11,
+                            "sku": "CAB-USB-023",
+                            "imagen": "https://images.unsplash.com/photo-1591290619762-d71b7f6ea8c2?w=400"
+                        },
+                        {
+                            "id": "prod_024",
+                            "nombre": "Power Bank 20000mAh",
+                            "descripcion": "Batería portátil de carga rápida",
+                            "precio": 39.99,
+                            "stock": 112,
+                            "ventas_mes": 167,
+                            "sku": "POW-BAN-024",
+                            "imagen": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let categoriaSeleccionada = 'todas';
+
+        function inicializarDashboard() {
+            document.getElementById('fecha-actualizacion').textContent = 
+                `Última actualización: ${productosData.metadata.fecha_actualizacion}`;
+            
+            calcularEstadisticas();
+            mostrarMenosVendidos();
+            renderizarCategorias();
+            renderizarProductos();
+        }
+
+        function calcularEstadisticas() {
+            const todosProductos = productosData.categorias.flatMap(cat => 
+                cat.productos.map(prod => ({...prod, categoria: cat.nombre}))
+            );
+
+            const totalStock = todosProductos.reduce((acc, p) => acc + p.stock, 0);
+            const totalVentas = todosProductos.reduce((acc, p) => acc + p.ventas_mes, 0);
+            const valorInventario = todosProductos.reduce((acc, p) => acc + (p.precio * p.stock), 0);
+            const stockBajo = todosProductos.filter(p => p.stock < 10).length;
+
+            const stats = [
+                { titulo: 'Total Productos', valor: todosProductos.length, icono: '📦', color: 'purple' },
+                { titulo: 'Stock Total', valor: totalStock, icono: '📊', color: 'blue' },
+                { titulo: 'Ventas del Mes', valor: totalVentas, icono: '📈', color: 'green' },
+                { titulo: 'Valor Inventario', valor: `$${valorInventario.toFixed(2)}`, icono: '💰', color: 'yellow' },
+                { titulo: 'Stock Bajo', valor: stockBajo, icono: '⚠️', color: 'red' }
+            ];
+
+            document.getElementById('stats-container').innerHTML = stats.map(stat => `
+                <div class="glassmorphism rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-purple-200 text-sm">${stat.titulo}</p>
+                            <p class="text-3xl font-bold text-white mt-1">${stat.valor}</p>
+                        </div>
+                        <div class="text-4xl">${stat.icono}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function mostrarMenosVendidos() {
+            const todosProductos = productosData.categorias.flatMap(cat => 
+                cat.productos.map(prod => ({...prod, categoria: cat.nombre}))
+            );
+
+            const menosVendidos = todosProductos
+                .filter(p => p.ventas_mes < 20)
+                .sort((a, b) => a.ventas_mes - b.ventas_mes);
+
+            document.getElementById('menos-vendidos-container').innerHTML = menosVendidos.map(producto => `
+                <div class="bg-red-500/20 border border-red-400/30 rounded-lg p-4 card-hover">
+                    <img src="${producto.imagen}" alt="${producto.nombre}" 
+                         class="w-full h-32 object-cover rounded-lg mb-3">
+                    <h3 class="text-white font-semibold mb-1">${producto.nombre}</h3>
+                    <p class="text-purple-200 text-sm mb-2">${producto.categoria}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-red-300 font-bold text-lg">$${producto.precio}</span>
+                        <span class="bg-red-500/50 px-2 py-1 rounded text-white text-xs">
+                            ${producto.ventas_mes} ventas
+                        </span>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-xs px-2 py-1 rounded ${producto.stock < 10 ? 'bg-red-500/50 text-red-100' : 'bg-green-500/50 text-green-100'}">
+                            Stock: ${producto.stock}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderizarCategorias() {
+            const categorias = ['todas', ...productosData.categorias.map(c => c.nombre)];
+            
+            document.getElementById('categorias-container').innerHTML = categorias.map(cat => `
+                <button onclick="filtrarPorCategoria('${cat}')" 
+                        class="px-4 py-2 rounded-lg font-medium transition-all ${
+                            categoriaSeleccionada === cat
+                                ? 'bg-purple-500 text-white shadow-lg scale-105'
+                                : 'bg-white/20 text-purple-200 hover:bg-white/30'
+                        }">
+                    ${cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+            `).join('');
+        }
+
+        function filtrarPorCategoria(categoria) {
+            categoriaSeleccionada = categoria;
+            renderizarCategorias();
+            renderizarProductos();
+        }
+
+        function renderizarProductos() {
+            const todosProductos = productosData.categorias.flatMap(cat => 
+                cat.productos.map(prod => ({...prod, categoria: cat.nombre}))
+            );
+
+            const productosFiltrados = categoriaSeleccionada === 'todas' 
+                ? todosProductos 
+                : todosProductos.filter(p => p.categoria === categoriaSeleccionada);
+
+            document.getElementById('titulo-productos').textContent = 
+                categoriaSeleccionada === 'todas' 
+                    ? 'Catálogo de Productos' 
+                    : `Catálogo de Productos - ${categoriaSeleccionada}`;
+
+            document.getElementById('productos-container').innerHTML = productosFiltrados.map(producto => `
+                <div class="bg-white/10 rounded-lg overflow-hidden card-hover border border-white/20">
+                    <img src="${producto.imagen}" alt="${producto.nombre}" 
+                         class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <span class="text-xs bg-purple-500/50 text-purple-100 px-2 py-1 rounded mb-2 inline-block">
+                            ${producto.categoria}
+                        </span>
+                        <h3 class="text-white font-bold text-lg mb-2">${producto.nombre}</h3>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-2xl font-bold text-green-400">$${producto.precio}</span>
+                            <span class="text-purple-200 text-sm">${producto.ventas_mes} ventas</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm px-3 py-1 rounded-full ${
+                                producto.stock < 10 
+                                    ? 'bg-red-500/50 text-red-100' 
+                                    : producto.stock < 50 
+                                    ? 'bg-yellow-500/50 text-yellow-100'
+                                    : 'bg-green-500/50 text-green-100'
+                            }">
+                                Stock: ${producto.stock}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copiarJSON() {
+            const jsonText = JSON.stringify(productosData, null, 2);
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('✅ JSON copiado al portapapeles');
+            });
+        }
+
+        function descargarJSON() {
+            const jsonText = JSON.stringify(productosData, null, 2);
+            const blob = new Blob([jsonText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'productos.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function verJSON() {
+            const viewer = document.getElementById('json-viewer');
+            const display = document.getElementById('json-display');
+            
+            if (viewer.classList.contains('hidden')) {
+                display.textContent = JSON.stringify(productosData, null, 2);
+                viewer.classList.remove('hidden');
+            } else {
+                viewer.classList.add('hidden');
+            }
+        }
+
+        // Inicializar al cargar la página
+        window.addEventListener('DOMContentLoaded', inicializarDashboard);
+    </script>
+</body>
+</html>
