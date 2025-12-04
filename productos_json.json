@@ -1,602 +1,286 @@
 {
-  "nodes": [
-    {
-      "parameters": {
-        "updates": [
-          "message"
-        ],
-        "additionalFields": {}
-      },
-      "id": "9d511edd-cef8-45f5-a328-7b8759daf08e",
-      "name": "Telegram Trigger",
-      "type": "n8n-nodes-base.telegramTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        -1936,
-        176
-      ],
-      "webhookId": "700c06fb-0dd4-47f4-aa5d-27f18419ad6a",
-      "credentials": {
-        "telegramApi": {
-          "id": "2jWhkG1DRI96NCRu",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "url": "https://jomarbp.github.io/jbtienda/productos_json.json",
-        "options": {}
-      },
-      "id": "a72942ae-3f37-4ff1-bfcb-ef330242f8ed",
-      "name": "Fetch Product Data",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -1712,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const productData = $input.first().json;\nconst telegramData = $('Telegram Trigger').first().json;\nconst userQuery = telegramData.message.text.toLowerCase();\n\n// Search for products mentioned in the query\nlet matchedProducts = [];\n\nif (productData && productData.categorias) {\n  productData.categorias.forEach(categoria => {\n    if (categoria.productos) {\n      categoria.productos.forEach(producto => {\n        const productNameLower = producto.nombre.toLowerCase();\n        const productWords = productNameLower.split(' ');\n        \n        // Check for word matches\n        const hasMatch = productWords.some(word => {\n          return word.length > 2 && userQuery.includes(word);\n        }) || userQuery.includes(producto.sku.toLowerCase());\n        \n        if (hasMatch) {\n          matchedProducts.push({\n            nombre: producto.nombre,\n            descripcion: producto.descripcion,\n            precio: producto.precio,\n            stock: producto.stock,\n            ventas_mes: producto.ventas_mes,\n            sku: producto.sku,\n            imagen: producto.imagen,\n            categoria: categoria.nombre\n          });\n        }\n      });\n    }\n  });\n}\n\nreturn {\n  json: {\n    message: telegramData.message,\n    productData: productData,\n    matchedProducts: matchedProducts,\n    userQuery: userQuery\n  }\n};"
-      },
-      "id": "2f10d9f3-8f17-41af-8df6-6ec59f161bd5",
-      "name": "Process Product Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1488,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $json.message.text }}",
-        "options": {
-          "systemMessage": "=Eres un asistente inteligente de inventario para una tienda.\n\nHERRAMIENTAS DISPONIBLES:\nTienes acceso a la herramienta '{{ $json.productData }}' que te permite buscar productos en el inventario.\n\nCÓMO BUSCAR PRODUCTOS:\nPara buscar productos, SIEMPRE usa la herramienta searchProducts con el término de búsqueda.\nEjemplo: Si buscan \"Banda Elástica\", usa searchProducts con query=\"banda elástica\"\nLa herramienta buscará en todas las categorías y retornará productos que coincidan.\n\nREGLAS IMPORTANTES:\n1. SIEMPRE usa la herramienta searchProducts antes de responder sobre productos\n2. NUNCA digas que un producto no existe sin usar primero searchProducts\n3. Busca con términos flexibles (ej: si buscan \"banda\", usa searchProducts con \"banda\")\n4. NUNCA muestres JSON crudo ni bloques de código\n5. Responde SIEMPRE en español con lenguaje natural y amigable\n6. Cuando encuentres un producto, SIEMPRE incluye:\n   - Nombre completo del producto\n   - Precio con formato: $XX.XX\n   - Stock disponible: XX unidades\n   - Descripción detallada\n   - La URL COMPLETA de la imagen\n7. Si el usuario pide gráficos/análisis, responde: 'GENERAR_GRAFICO: [tipo]' donde tipo puede ser: ventas, stock, categorias\n\nFORMATO DE RESPUESTA PARA PRODUCTOS:\n🛍️ **{{ $json.productData.categorias[0].productos[0].nombre }}**\n💰 Precio: ${{ $json.productData.categorias[0].productos[0].precio }}\n📦 Stock: {{ $json.productData.categorias[0].productos[0].stock }} unidades\n📝 {{ $json.productData.categorias[0].productos[0].descripcion }}\n🖼️ {{ $json.productData.categorias[0].productos[0].imagen }}\n\nEjemplo de respuesta correcta:\n🛍️ **Banda Elástica**\n💰 Precio: $15.99\n📦 Stock: 3 unidades\n📝 Banda de resistencia para ejercicios\n🖼️ https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400",
-          "maxIterations": 15
-        }
-      },
-      "id": "34df66e9-6f89-4882-ae08-a26594f8f6b3",
-      "name": "Product Assistant Agent",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3,
-      "position": [
-        -1264,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "modelName": "models/gemini-2.0-flash",
-        "options": {}
-      },
-      "id": "aaa0d687-ddda-4855-a71f-a7e3620649c8",
-      "name": "Google Gemini Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        -1264,
-        400
-      ],
-      "credentials": {
-        "googlePalmApi": {
-          "id": "eH5Iugg7RFpJAxFG",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
-      },
-      "id": "d7139406-e00d-4297-8e99-5d35e4fdbdbe",
-      "name": "Conversation Memory",
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        -1136,
-        400
-      ]
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $('Detect Request Type').item.json.chatId }}",
-        "text": "={{ $('Detect Request Type').item.json.textDescription }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "aec47d1e-4d0b-41f8-97dc-647ed6c290f6",
-      "name": "Send Telegram Response",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        -16,
-        176
-      ],
-      "webhookId": "99e01108-a49b-448f-87b5-149d670d1af8",
-      "credentials": {
-        "telegramApi": {
-          "id": "2jWhkG1DRI96NCRu",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Get data from Extract Real Image URLs node\nconst extractedData = $json;\nconst output = extractedData.output;\nconst realImageUrls = extractedData.realImageUrls || [];\nconst specificProduct = extractedData.specificProduct || null;\nconst isSpecificProduct = extractedData.isSpecificProduct || false;\nconst productData = $('Process Product Data').item.json.productData;\nconst chatId = $('Telegram Trigger').item.json.message.chat.id;\n\n// Check for chart request\nconst chartMatch = output.match(/GENERAR_GRAFICO:\\s*(\\w+)/i);\nif (chartMatch) {\n  return {\n    json: {\n      isChartRequest: true,\n      chartType: chartMatch[1].toLowerCase(),\n      chatId: chatId,\n      productData: productData,\n      output: output\n    }\n  };\n}\n\n// Use the real image URLs that were already extracted\nconst imageUrls = realImageUrls;\n// Remove URLs from output if we have a specific product (already formatted)\nlet textDescription = output;\nif (!isSpecificProduct) {\n  textDescription = output.replace(/(https?:\\/\\/[^\\s]+)/gi, '').trim();\n}\n\nreturn {\n  json: {\n    isChartRequest: false,\n    imageUrls: imageUrls,\n    textDescription: textDescription,\n    chatId: chatId,\n    output: output,\n    specificProduct: specificProduct,\n    isSpecificProduct: isSpecificProduct\n  }\n};"
-      },
-      "id": "892be21d-df75-44b6-869f-d85836c2c8a7",
-      "name": "Detect Request Type",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -688,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": false,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "id": "id-1",
-              "leftValue": "={{ $json.isChartRequest }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "true"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "8cfcc258-b3e2-4fbf-954c-f8050da73b7e",
-      "name": "Route Request",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -464,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "sendPhoto",
-        "chatId": "={{ $('Detect Request Type').item.json.chatId }}",
-        "binaryData": true,
-        "binaryPropertyName": "photo",
-        "additionalFields": {
-          "caption": "={{ $('Detect Request Type').item.json.textDescription }}",
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "af6ecbbe-067b-459a-b8ca-a8bde3da984e",
-      "name": "Send Photo with Description",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        432,
-        464
-      ],
-      "webhookId": "b70cb33e-7075-4257-8bd5-212de9621cc7",
-      "credentials": {
-        "telegramApi": {
-          "id": "2jWhkG1DRI96NCRu",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "url": "={{ $('Detect Request Type').item.json.imageUrls[0] }}",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true,
-              "responseFormat": "file",
-              "outputPropertyName": "photo"
-            }
-          }
-        }
-      },
-      "id": "a44ad1ec-5522-4a9f-9e86-c8547410ff4e",
-      "name": "Descargarimagen",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -16,
-        368
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "id-1",
-              "leftValue": "={{ $binary.photo && $binary.photo.mimeType && $binary.photo.mimeType.startsWith('image/') }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "true"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "db006c2e-7e7f-40b5-b941-c110fe7f1c10",
-      "name": "Download Successful?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        208,
-        368
-      ]
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $('Detect Request Type').item.json.chatId }}",
-        "text": "={{ $('Detect Request Type').item.json.textDescription }}",
-        "additionalFields": {
-          "parse_mode": "Markdown"
-        }
-      },
-      "id": "5583e8d1-9434-4eb5-b1f2-391bbdf4a4e5",
-      "name": "Send Text Only",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        432,
-        272
-      ],
-      "webhookId": "654e1615-9810-4c2e-bebb-6bb415f28293",
-      "credentials": {
-        "telegramApi": {
-          "id": "2jWhkG1DRI96NCRu",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const productData = $json.productData;\nconst chartType = $json.chartType;\nconst chatId = $json.chatId;\n\nlet chartData = {};\nlet chartConfig = {};\n\nif (chartType === 'ventas') {\n  const salesData = [];\n  productData.categorias.forEach(cat => {\n    cat.productos.forEach(prod => {\n      salesData.push({\n        name: prod.nombre,\n        value: prod.ventas_mes || 0\n      });\n    });\n  });\n  salesData.sort((a, b) => b.value - a.value);\n  chartData = salesData.slice(0, 10);\n  chartConfig = {\n    type: 'bar',\n    title: 'Top 10 Productos por Ventas del Mes',\n    xLabel: 'Producto',\n    yLabel: 'Ventas'\n  };\n} else if (chartType === 'stock') {\n  const stockData = [];\n  productData.categorias.forEach(cat => {\n    cat.productos.forEach(prod => {\n      if (prod.stock < 20) {\n        stockData.push({\n          name: prod.nombre,\n          value: prod.stock\n        });\n      }\n    });\n  });\n  chartData = stockData;\n  chartConfig = {\n    type: 'bar',\n    title: 'Productos con Stock Bajo (<20)',\n    xLabel: 'Producto',\n    yLabel: 'Unidades en Stock'\n  };\n} else if (chartType === 'categorias') {\n  const categoryData = {};\n  productData.categorias.forEach(cat => {\n    let totalValue = 0;\n    cat.productos.forEach(prod => {\n      totalValue += prod.precio * prod.stock;\n    });\n    categoryData[cat.nombre] = totalValue;\n  });\n  chartData = Object.entries(categoryData).map(([name, value]) => ({\n    name: name,\n    value: Math.round(value)\n  }));\n  chartConfig = {\n    type: 'pie',\n    title: 'Distribución de Valor por Categoría'\n  };\n}\n\nreturn {\n  json: {\n    chartData: chartData,\n    chartConfig: chartConfig,\n    chatId: chatId\n  }\n};"
-      },
-      "id": "e4614d48-c50a-4b4f-b934-6ae096255172",
-      "name": "Prepare Chart Data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -240,
-        -16
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://quickchart.io/chart",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {\n  \"type\": $json.chartConfig.type,\n  \"data\": {\n    \"labels\": $json.chartData.map(d => d.name),\n    \"datasets\": [{\n      \"label\": $json.chartConfig.title,\n      \"data\": $json.chartData.map(d => d.value),\n      \"backgroundColor\": [\n        'rgba(255, 99, 132, 0.7)',\n        'rgba(54, 162, 235, 0.7)',\n        'rgba(255, 206, 86, 0.7)',\n        'rgba(75, 192, 192, 0.7)',\n        'rgba(153, 102, 255, 0.7)',\n        'rgba(255, 159, 64, 0.7)',\n        'rgba(199, 199, 199, 0.7)',\n        'rgba(83, 102, 255, 0.7)',\n        'rgba(255, 99, 255, 0.7)',\n        'rgba(99, 255, 132, 0.7)'\n      ]\n    }]\n  },\n  \"options\": {\n    \"title\": {\n      \"display\": true,\n      \"text\": $json.chartConfig.title\n    },\n    \"legend\": {\n      \"display\": $json.chartConfig.type === 'pie'\n    }\n  }\n} }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          }
-        }
-      },
-      "id": "3e4ca3bb-0ffc-452a-9d66-04ce02fcb705",
-      "name": "Generate QuickChart",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -16,
-        -16
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "sendPhoto",
-        "chatId": "={{ $('Prepare Chart Data').item.json.chatId }}",
-        "binaryData": true,
-        "additionalFields": {
-          "caption": "📊 {{ $('Prepare Chart Data').item.json.chartConfig.title }}\n\nGráfico generado con los datos actuales del inventario."
-        }
-      },
-      "id": "5f262b62-e377-45e4-b1df-7ec540d23a56",
-      "name": "Send Chart",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        208,
-        -16
-      ],
-      "webhookId": "chart-webhook-001",
-      "credentials": {
-        "telegramApi": {
-          "id": "2jWhkG1DRI96NCRu",
-          "name": "Telegram account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "id-check-images",
-              "leftValue": "={{ $json.imageUrls }}",
-              "operator": {
-                "type": "array",
-                "operation": "notEmpty"
-              }
-            },
-            {
-              "id": "id-check-images-length",
-              "leftValue": "={{ $json.imageUrls.length }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "119ef2b0-4e30-4391-b196-46c024bb2f44",
-      "name": "Check Images",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -240,
-        272
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// EXTRACT REAL IMAGE URLs AND COMPLETE PRODUCT INFORMATION\n// Get the AI output from Product Assistant Agent\nconst aiOutput = $('Product Assistant Agent').item.json.output;\n\n// Get the user query from Telegram Trigger\nconst userQuery = $('Telegram Trigger').item.json.message.text.toLowerCase();\n\n// Get the product data\nconst productData = $('Process Product Data').item.json.productData;\n\n// Search for products mentioned in the query and extract REAL URLs and complete info from JSON\nlet realImageUrls = [];\nlet matchedProducts = [];\nlet specificProduct = null;\n\nif (productData && productData.categorias) {\n  productData.categorias.forEach(categoria => {\n    if (categoria.productos) {\n      categoria.productos.forEach(producto => {\n        // Check if product name or SKU is mentioned in the query OR in AI output\n        const productNameLower = producto.nombre.toLowerCase();\n        const productWords = productNameLower.split(' ');\n        \n        // Check for match in query or AI output\n        const queryMatch = productWords.some(word => {\n          return word.length > 2 && userQuery.includes(word);\n        }) || userQuery.includes(producto.sku.toLowerCase());\n        \n        const aiMatch = productWords.some(word => {\n          return word.length > 2 && aiOutput.toLowerCase().includes(word);\n        });\n        \n        if (queryMatch || aiMatch) {\n          const productInfo = {\n            nombre: producto.nombre,\n            descripcion: producto.descripcion,\n            precio: producto.precio,\n            stock: producto.stock,\n            ventas_mes: producto.ventas_mes,\n            sku: producto.sku,\n            imagen: producto.imagen,\n            categoria: categoria.nombre,\n            id: producto.id\n          };\n          \n          matchedProducts.push(productInfo);\n          \n          if (producto.imagen) {\n            realImageUrls.push(producto.imagen);\n          }\n          \n          // If we found a specific product (single match or best match), store it\n          if (!specificProduct || (matchedProducts.length === 1)) {\n            specificProduct = productInfo;\n          }\n        }\n      });\n    }\n  });\n}\n\n// Remove ALL URLs from AI output (both real and fake)\nconst urlRegex = /(https?:\\/\\/[^\\s]+)/gi;\nlet modifiedOutput = aiOutput.replace(urlRegex, '').trim();\n\n// If we have a specific product, format complete information\nlet isSpecificProduct = false;\nif (specificProduct && matchedProducts.length <= 3) {\n  isSpecificProduct = true;\n  \n  // Format complete product information\n  const moneda = productData.metadata?.moneda || 'USD';\n  const simboloMoneda = moneda === 'USD' ? '$' : moneda;\n  \n  modifiedOutput = `🛍️ **${specificProduct.nombre}**\\n\\n`;\n  modifiedOutput += `📝 ${specificProduct.descripcion}\\n\\n`;\n  modifiedOutput += `🏷️ **Categoría:** ${specificProduct.categoria}\\n`;\n  modifiedOutput += `💰 **Precio:** ${simboloMoneda}${specificProduct.precio.toFixed(2)}\\n`;\n  modifiedOutput += `📦 **Stock:** ${specificProduct.stock} unidades\\n`;\n  modifiedOutput += `📊 **Ventas del mes:** ${specificProduct.ventas_mes}\\n`;\n  modifiedOutput += `🔖 **SKU:** ${specificProduct.sku}\\n`;\n  \n  // If multiple products found, add note\n  if (matchedProducts.length > 1) {\n    modifiedOutput += `\\n💡 Se encontraron ${matchedProducts.length} productos similares.`;\n  }\n}\n\nreturn {\n  json: {\n    output: modifiedOutput,\n    originalOutput: aiOutput,\n    realImageUrls: realImageUrls,\n    matchedProducts: matchedProducts,\n    specificProduct: specificProduct,\n    isSpecificProduct: isSpecificProduct\n  }\n};"
-      },
-      "id": "56deb875-5fcd-4173-88dd-6835806920eb",
-      "name": "Extract Real Image URLs",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -912,
-        176
-      ]
-    },
-    {
-      "parameters": {
-        "name": "searchProducts",
-        "description": "Busca productos en el inventario de la tienda. Puedes buscar por nombre del producto, categoría, SKU o palabras clave en la descripción. Retorna información completa de los productos encontrados incluyendo nombre, precio, stock, descripción, imagen y categoría.",
-        "jsCode": "// Get the search query from the tool input\nconst query = $input.first().json.query ? $input.first().json.query.toLowerCase() : '';\n\n// Get product data from Process Product Data node\nconst productData = $('Process Product Data').item.json.productData;\n\nlet matchedProducts = [];\n\nif (productData && productData.categorias && query) {\n  productData.categorias.forEach(categoria => {\n    if (categoria.productos) {\n      categoria.productos.forEach(producto => {\n        const productNameLower = producto.nombre.toLowerCase();\n        const descriptionLower = producto.descripcion.toLowerCase();\n        const categoryLower = categoria.nombre.toLowerCase();\n        const skuLower = producto.sku.toLowerCase();\n        \n        // Split query into words for better matching\n        const queryWords = query.split(' ').filter(w => w.length > 2);\n        \n        // Check if any query word matches product name, description, category or SKU\n        const hasMatch = queryWords.some(word => {\n          return productNameLower.includes(word) || \n                 descriptionLower.includes(word) ||\n                 categoryLower.includes(word) ||\n                 skuLower.includes(word);\n        });\n        \n        if (hasMatch) {\n          matchedProducts.push({\n            nombre: producto.nombre,\n            descripcion: producto.descripcion,\n            precio: producto.precio,\n            stock: producto.stock,\n            ventas_mes: producto.ventas_mes,\n            sku: producto.sku,\n            imagen: producto.imagen,\n            categoria: categoria.nombre\n          });\n        }\n      });\n    }\n  });\n}\n\nreturn {\n  json: {\n    productos: matchedProducts,\n    total_encontrados: matchedProducts.length,\n    query_original: query\n  }\n};",
-        "specifyInputSchema": true
-      },
-      "id": "c70e2203-f801-4f2f-ac5e-3c457ca4ff06",
-      "name": "Search Products Tool",
-      "type": "@n8n/n8n-nodes-langchain.toolCode",
-      "typeVersion": 1.1,
-      "position": [
-        -1392,
-        400
-      ]
-    }
-  ],
-  "connections": {
-    "Telegram Trigger": {
-      "main": [
-        [
-          {
-            "node": "Fetch Product Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch Product Data": {
-      "main": [
-        [
-          {
-            "node": "Process Product Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Process Product Data": {
-      "main": [
-        [
-          {
-            "node": "Product Assistant Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Product Assistant Agent": {
-      "main": [
-        [
-          {
-            "node": "Extract Real Image URLs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Product Assistant Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Conversation Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "Product Assistant Agent",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Detect Request Type": {
-      "main": [
-        [
-          {
-            "node": "Route Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Route Request": {
-      "main": [
-        [
-          {
-            "node": "Prepare Chart Data",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Check Images",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Descargarimagen": {
-      "main": [
-        [
-          {
-            "node": "Download Successful?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download Successful?": {
-      "main": [
-        [
-          {
-            "node": "Send Photo with Description",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Text Only",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Chart Data": {
-      "main": [
-        [
-          {
-            "node": "Generate QuickChart",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Generate QuickChart": {
-      "main": [
-        [
-          {
-            "node": "Send Chart",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Images": {
-      "main": [
-        [
-          {
-            "node": "Descargarimagen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Telegram Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Real Image URLs": {
-      "main": [
-        [
-          {
-            "node": "Detect Request Type",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Search Products Tool": {
-      "ai_tool": [
-        [
-          {
-            "node": "Product Assistant Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    }
+  "metadata": {
+    "fecha_actualizacion": "2024-12-02",
+    "total_productos": 24,
+    "moneda": "USD",
+    "version": "1.0.0"
   },
-  "pinData": {},
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "e18f18c12cacd9c3c88441415d4bb497cebd06da5a6a9fda7dfcefe05c3959a2"
-  }
+  "categorias": [
+    {
+      "id": "cat_001",
+      "nombre": "Electrónica",
+      "productos": [
+        {
+          "id": "prod_001",
+          "nombre": "Laptop HP Pavilion",
+          "descripcion": "Laptop potente para trabajo y entretenimiento",
+          "precio": 899.99,
+          "stock": 45,
+          "ventas_mes": 87,
+          "sku": "LAP-HP-001",
+          "imagen": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400"
+        },
+        {
+          "id": "prod_002",
+          "nombre": "Mouse Logitech MX",
+          "descripcion": "Mouse ergonómico de alta precisión",
+          "precio": 79.99,
+          "stock": 120,
+          "ventas_mes": 156,
+          "sku": "MOU-LOG-002",
+          "imagen": "https://images.unsplash.com/photo-1527814050087-3793815479db?w=400"
+        },
+        {
+          "id": "prod_003",
+          "nombre": "Teclado Mecánico RGB",
+          "descripcion": "Teclado gaming con iluminación RGB",
+          "precio": 129.99,
+          "stock": 8,
+          "ventas_mes": 12,
+          "sku": "TEC-MEC-003",
+          "imagen": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400"
+        },
+        {
+          "id": "prod_004",
+          "nombre": "Webcam HD 1080p",
+          "descripcion": "Cámara web de alta definición",
+          "precio": 59.99,
+          "stock": 67,
+          "ventas_mes": 34,
+          "sku": "WEB-HD-004",
+          "imagen": "https://images.unsplash.com/photo-1563203369-26f2e4a5ccf7?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_002",
+      "nombre": "Hogar y Cocina",
+      "productos": [
+        {
+          "id": "prod_005",
+          "nombre": "Licuadora Oster",
+          "descripcion": "Licuadora de 600W multifuncional",
+          "precio": 49.99,
+          "stock": 92,
+          "ventas_mes": 145,
+          "sku": "LIC-OST-005",
+          "imagen": "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400"
+        },
+        {
+          "id": "prod_006",
+          "nombre": "Cafetera Espresso",
+          "descripcion": "Cafetera automática de espresso",
+          "precio": 189.99,
+          "stock": 23,
+          "ventas_mes": 78,
+          "sku": "CAF-ESP-006",
+          "imagen": "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=400"
+        },
+        {
+          "id": "prod_007",
+          "nombre": "Juego de Cuchillos",
+          "descripcion": "Set de 6 cuchillos profesionales",
+          "precio": 79.99,
+          "stock": 5,
+          "ventas_mes": 8,
+          "sku": "CUC-SET-007",
+          "imagen": "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=400"
+        },
+        {
+          "id": "prod_008",
+          "nombre": "Sartén Antiadherente",
+          "descripcion": "Sartén de 28cm antiadherente",
+          "precio": 39.99,
+          "stock": 110,
+          "ventas_mes": 203,
+          "sku": "SAR-ANT-008",
+          "imagen": "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_003",
+      "nombre": "Deportes",
+      "productos": [
+        {
+          "id": "prod_009",
+          "nombre": "Mancuernas 10kg",
+          "descripcion": "Par de mancuernas ajustables",
+          "precio": 45.99,
+          "stock": 78,
+          "ventas_mes": 112,
+          "sku": "MAN-10K-009",
+          "imagen": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400"
+        },
+        {
+          "id": "prod_010",
+          "nombre": "Colchoneta Yoga",
+          "descripcion": "Colchoneta antideslizante premium",
+          "precio": 29.99,
+          "stock": 134,
+          "ventas_mes": 189,
+          "sku": "COL-YOG-010",
+          "imagen": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400"
+        },
+        {
+          "id": "prod_011",
+          "nombre": "Banda Elástica",
+          "descripcion": "Banda de resistencia para ejercicios",
+          "precio": 15.99,
+          "stock": 3,
+          "ventas_mes": 6,
+          "sku": "BAN-ELA-011",
+          "imagen": "https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400"
+        },
+        {
+          "id": "prod_012",
+          "nombre": "Botella Deportiva",
+          "descripcion": "Botella térmica de 750ml",
+          "precio": 19.99,
+          "stock": 210,
+          "ventas_mes": 267,
+          "sku": "BOT-DEP-012",
+          "imagen": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_004",
+      "nombre": "Moda",
+      "productos": [
+        {
+          "id": "prod_013",
+          "nombre": "Zapatillas Running",
+          "descripcion": "Zapatillas deportivas para correr",
+          "precio": 89.99,
+          "stock": 56,
+          "ventas_mes": 98,
+          "sku": "ZAP-RUN-013",
+          "imagen": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400"
+        },
+        {
+          "id": "prod_014",
+          "nombre": "Gorra Deportiva",
+          "descripcion": "Gorra ajustable con protección UV",
+          "precio": 24.99,
+          "stock": 145,
+          "ventas_mes": 176,
+          "sku": "GOR-DEP-014",
+          "imagen": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400"
+        },
+        {
+          "id": "prod_015",
+          "nombre": "Reloj Inteligente",
+          "descripcion": "Smartwatch con monitor cardíaco",
+          "precio": 199.99,
+          "stock": 7,
+          "ventas_mes": 15,
+          "sku": "REL-INT-015",
+          "imagen": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"
+        },
+        {
+          "id": "prod_016",
+          "nombre": "Mochila Urbana",
+          "descripcion": "Mochila resistente al agua 25L",
+          "precio": 59.99,
+          "stock": 89,
+          "ventas_mes": 134,
+          "sku": "MOC-URB-016",
+          "imagen": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_005",
+      "nombre": "Libros y Papelería",
+      "productos": [
+        {
+          "id": "prod_017",
+          "nombre": "Cuaderno A4",
+          "descripcion": "Cuaderno universitario 200 hojas",
+          "precio": 12.99,
+          "stock": 234,
+          "ventas_mes": 312,
+          "sku": "CUA-A4-017",
+          "imagen": "https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400"
+        },
+        {
+          "id": "prod_018",
+          "nombre": "Set Bolígrafos",
+          "descripcion": "Pack de 12 bolígrafos de colores",
+          "precio": 8.99,
+          "stock": 178,
+          "ventas_mes": 245,
+          "sku": "BOL-SET-018",
+          "imagen": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=400"
+        },
+        {
+          "id": "prod_019",
+          "nombre": "Libro Marketing Digital",
+          "descripcion": "Guía completa de marketing online",
+          "precio": 34.99,
+          "stock": 4,
+          "ventas_mes": 9,
+          "sku": "LIB-MAR-019",
+          "imagen": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400"
+        },
+        {
+          "id": "prod_020",
+          "nombre": "Agenda 2025",
+          "descripcion": "Agenda anual con planificador",
+          "precio": 18.99,
+          "stock": 156,
+          "ventas_mes": 198,
+          "sku": "AGE-2025-020",
+          "imagen": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400"
+        }
+      ]
+    },
+    {
+      "id": "cat_006",
+      "nombre": "Tecnología",
+      "productos": [
+        {
+          "id": "prod_021",
+          "nombre": "Auriculares Bluetooth",
+          "descripcion": "Auriculares inalámbricos con cancelación de ruido",
+          "precio": 149.99,
+          "stock": 67,
+          "ventas_mes": 123,
+          "sku": "AUR-BLU-021",
+          "imagen": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400"
+        },
+        {
+          "id": "prod_022",
+          "nombre": "Cargador Rápido",
+          "descripcion": "Cargador USB-C de 65W",
+          "precio": 29.99,
+          "stock": 198,
+          "ventas_mes": 287,
+          "sku": "CAR-RAP-022",
+          "imagen": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400"
+        },
+        {
+          "id": "prod_023",
+          "nombre": "Cable USB-C Premium",
+          "descripcion": "Cable trenzado de 2 metros",
+          "precio": 19.99,
+          "stock": 6,
+          "ventas_mes": 11,
+          "sku": "CAB-USB-023",
+          "imagen": "https://images.unsplash.com/photo-1591290619762-d71b7f6ea8c2?w=400"
+        },
+        {
+          "id": "prod_024",
+          "nombre": "Power Bank 20000mAh",
+          "descripcion": "Batería portátil de carga rápida",
+          "precio": 39.99,
+          "stock": 112,
+          "ventas_mes": 167,
+          "sku": "POW-BAN-024",
+          "imagen": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400"
+        }
+      ]
+    }
+  ]
 }

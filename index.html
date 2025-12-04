@@ -77,7 +77,7 @@
             <p class="text-purple-200 mb-4">
                 Usa la URL de tu GitHub Pages para consumir este JSON desde n8n:
                 <code class="bg-purple-500/30 px-2 py-1 rounded block mt-2">
-                    https://tu-usuario.github.io/tu-repo/productos.json
+                    https://tu-usuario.github.io/tu-repo/productos_json.json
                 </code>
             </p>
             <div class="flex gap-3 flex-wrap">
@@ -98,8 +98,12 @@
     </div>
 
     <script>
-        // JSON integrado directamente
-        const productosData = {
+        // Variable global para almacenar los datos de productos
+        let productosData = null;
+        let categoriaSeleccionada = 'todas';
+
+        // Datos de productos como fallback (mismos datos que productos_json.json)
+        const productosDataFallback = {
             "metadata": {
                 "fecha_actualizacion": "2024-12-02",
                 "total_productos": 24,
@@ -386,7 +390,133 @@
             ]
         };
 
-        let categoriaSeleccionada = 'todas';
+        // Función para cargar los datos desde el archivo JSON
+        async function cargarDatosProductos() {
+            // Detectar si estamos en file:// (protocolo local)
+            const isLocalFile = window.location.protocol === 'file:';
+            
+            if (isLocalFile) {
+                // Si estamos en file://, mostrar mensaje y usar XMLHttpRequest como alternativa
+                console.warn('⚠️ Detectado protocolo file://. Para mejor funcionamiento, usa un servidor local.');
+                mostrarMensajeServidor();
+                // Intentar cargar con XMLHttpRequest (aunque también puede fallar)
+                cargarConXHR();
+                return;
+            }
+            
+            try {
+                const response = await fetch('productos_json.json');
+                if (!response.ok) {
+                    throw new Error('Error al cargar los datos de productos');
+                }
+                productosData = await response.json();
+                inicializarDashboard();
+            } catch (error) {
+                console.error('Error con fetch:', error);
+                // Si falla el fetch, intentar con XMLHttpRequest
+                cargarConXHR();
+            }
+        }
+
+        // Función para cargar datos usando XMLHttpRequest (alternativa a fetch)
+        function cargarConXHR() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'productos_json.json', true);
+            xhr.onload = function() {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    try {
+                        productosData = JSON.parse(xhr.responseText);
+                        inicializarDashboard();
+                        // Ocultar mensaje de advertencia si se cargó correctamente
+                        const mensaje = document.querySelector('.mensaje-servidor');
+                        if (mensaje) mensaje.remove();
+                    } catch (e) {
+                        console.error('Error al parsear JSON:', e);
+                        mostrarErrorCarga();
+                    }
+                } else {
+                    mostrarErrorCarga();
+                }
+            };
+            xhr.onerror = function() {
+                console.error('Error de red al cargar productos_json.json');
+                console.log('Usando datos de fallback integrados en el HTML');
+                // Usar datos de fallback si falla la carga
+                productosData = productosDataFallback;
+                inicializarDashboard();
+                // Ocultar mensaje de advertencia si se cargó correctamente
+                const mensaje = document.querySelector('.mensaje-servidor');
+                if (mensaje) mensaje.remove();
+            };
+            xhr.send();
+        }
+
+        // Función para mostrar mensaje sobre servidor local
+        function mostrarMensajeServidor() {
+            const mensaje = document.createElement('div');
+            mensaje.className = 'mensaje-servidor fixed top-4 right-4 bg-yellow-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-md';
+            mensaje.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="text-2xl">⚠️</div>
+                    <div>
+                        <h3 class="font-bold mb-2">Servidor Local Recomendado</h3>
+                        <p class="text-sm mb-2">Para mejor funcionamiento, ejecuta un servidor local:</p>
+                        <div class="bg-black/30 p-2 rounded text-xs font-mono mb-2">
+                            <div><strong>Python:</strong> python -m http.server 8000</div>
+                            <div><strong>Node.js:</strong> npx http-server</div>
+                            <div><strong>VS Code:</strong> Live Server extension</div>
+                        </div>
+                        <p class="text-xs mb-2">Luego abre: <code class="bg-black/30 px-1 rounded">http://localhost:8000</code></p>
+                        <p class="text-xs italic">Intentando cargar datos de todas formas...</p>
+                        <button onclick="this.closest('.mensaje-servidor').remove()" 
+                                class="mt-2 bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(mensaje);
+        }
+
+        // Función para mostrar error de carga
+        function mostrarErrorCarga() {
+            // Intentar usar datos de fallback antes de mostrar error
+            if (productosDataFallback) {
+                console.log('Usando datos de fallback integrados en el HTML');
+                productosData = productosDataFallback;
+                inicializarDashboard();
+                return;
+            }
+            
+            document.getElementById('fecha-actualizacion').innerHTML = 
+                '❌ <strong>Error al cargar los datos.</strong><br>' +
+                '<small>Por favor, ejecuta un servidor local o verifica que el archivo productos_json.json esté disponible.</small>';
+            
+            // Mostrar instrucciones en el contenedor de productos
+            document.getElementById('productos-container').innerHTML = `
+                <div class="col-span-full text-center p-8">
+                    <div class="bg-red-500/20 border border-red-400/30 rounded-lg p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">⚠️ Error al Cargar Datos</h3>
+                        <p class="text-purple-200 mb-4">
+                            Para solucionar este problema, ejecuta un servidor local:
+                        </p>
+                        <div class="bg-black/40 p-4 rounded-lg text-left text-sm font-mono text-green-300 mb-4">
+                            <div><strong>Opción 1 - Python:</strong></div>
+                            <div class="ml-4">cd demo_tiendaapi_jb</div>
+                            <div class="ml-4">python -m http.server 8000</div>
+                            <div class="mt-2"><strong>Opción 2 - Node.js:</strong></div>
+                            <div class="ml-4">cd demo_tiendaapi_jb</div>
+                            <div class="ml-4">npx http-server</div>
+                            <div class="mt-2"><strong>Opción 3 - VS Code:</strong></div>
+                            <div class="ml-4">Instala la extensión "Live Server" y haz clic derecho en index.html → "Open with Live Server"</div>
+                        </div>
+                        <p class="text-purple-200">
+                            Luego abre: <code class="bg-purple-500/30 px-2 py-1 rounded">http://localhost:8000</code>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
 
         function inicializarDashboard() {
             document.getElementById('fecha-actualizacion').textContent = 
@@ -524,6 +654,10 @@
         }
 
         function copiarJSON() {
+            if (!productosData) {
+                alert('⚠️ Los datos aún no se han cargado. Por favor espera un momento.');
+                return;
+            }
             const jsonText = JSON.stringify(productosData, null, 2);
             navigator.clipboard.writeText(jsonText).then(() => {
                 alert('✅ JSON copiado al portapapeles');
@@ -531,6 +665,10 @@
         }
 
         function descargarJSON() {
+            if (!productosData) {
+                alert('⚠️ Los datos aún no se han cargado. Por favor espera un momento.');
+                return;
+            }
             const jsonText = JSON.stringify(productosData, null, 2);
             const blob = new Blob([jsonText], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -542,6 +680,10 @@
         }
 
         function verJSON() {
+            if (!productosData) {
+                alert('⚠️ Los datos aún no se han cargado. Por favor espera un momento.');
+                return;
+            }
             const viewer = document.getElementById('json-viewer');
             const display = document.getElementById('json-display');
             
@@ -553,8 +695,8 @@
             }
         }
 
-        // Inicializar al cargar la página
-        window.addEventListener('DOMContentLoaded', inicializarDashboard);
+        // Cargar datos al cargar la página
+        window.addEventListener('DOMContentLoaded', cargarDatosProductos);
     </script>
 </body>
 </html>
